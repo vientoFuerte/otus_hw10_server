@@ -24,6 +24,7 @@ jobs:
             libboost-filesystem-dev \
             libboost-program-options-dev \
             libboost-regex-dev \
+            libboost-test-dev \
             libgtest-dev \
             libgmock-dev \
             cmake \
