@@ -163,6 +163,7 @@ jobs:
       
       - name: Upload Release Asset
         id: upload-release-asset
+        if: hashFiles('./bulk_server.deb') != ''  
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
