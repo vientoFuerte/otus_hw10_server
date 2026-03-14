@@ -10,7 +10,7 @@ set(Boost_NO_BOOST_CMAKE ON)
 # Ищем Boost для основной программы
 find_package(Boost REQUIRED COMPONENTS filesystem system program_options regex)
 
-add_executable(bulk_server main.cpp bulk_server.cpp)
+add_executable(bulk_server main.cpp bulk_server.cpp async.cpp)
 
 set_target_properties(bulk_server PROPERTIES
     CXX_STANDARD 17
