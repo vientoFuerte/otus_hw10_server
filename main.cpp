@@ -60,7 +60,7 @@ void BeginAcceptConnection()
     //acceptor.async_accept(c->socket, std::bind(HandleAccept,c,boost::asio::placeholders::error));
     // Асинхронно ждём подключения.
     // Вместо std::bind используем лямбда-захват shared_ptr c.
-    acceptor.async_accept(c->socket,
+    acceptor->async_accept(c->socket,
         [c](const boost::system::error_code& err) {
             HandleAccept(c, err);
         });
