@@ -17,12 +17,11 @@ std::string message_hash = "1234";
 std::atomic_uint connection_id = 0;
 // Глобальная переменная для размера блока
 std::size_t g_bulk_size = 0;
-
-// IO контекст и acceptor (прослушивает порт 18000)
+// Глобальная переменная для порта
+unsigned short g_port = 0;
+// IO контекст и acceptor (теперь будет создаваться после получения порта)
 boost::asio::io_context io_context;
-tcp::acceptor acceptor(io_context, tcp::endpoint(tcp::v4(), 18000));
-
-
+std::unique_ptr<tcp::acceptor> acceptor;  // Используем unique_ptr, так как acceptor будет создан позже
 
 // Класс, представляющий одно подключение
 struct Connection : public std::enable_shared_from_this<Connection>
@@ -130,8 +129,15 @@ int main(int argc, char* argv[])
     std::cout << "SERVER PROGRAM" << std::endl;
     try
     {
-               
-        BeginAcceptConnection();
+         g_port = static_cast<unsigned short>(std::stoi(argv[1]));     // порт
+         g_bulk_size = static_cast<std::size_t>(std::stoll(argv[2]));  // размер блока      
+       
+        // Создаем acceptor с переданным портом
+        acceptor = std::make_unique<tcp::acceptor>(
+        io_context, 
+        tcp::endpoint(tcp::v4(), g_port)
+       );
+       BeginAcceptConnection();
 
         io_context.run();
               
