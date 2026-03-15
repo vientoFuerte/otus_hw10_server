@@ -155,17 +155,23 @@ int main(int argc, char* argv[])
     std::cout << "SERVER PROGRAM" << std::endl;
     try
     {
-         g_port = static_cast<unsigned short>(std::stoi(argv[1]));     // порт
-         g_bulk_size = static_cast<std::size_t>(std::stoll(argv[2]));  // размер блока      
+        g_port = static_cast<unsigned short>(std::stoi(argv[1]));     // порт
+        g_bulk_size = static_cast<std::size_t>(std::stoll(argv[2]));  // размер блока      
        
+        // Запускаем потоки вывода один раз
+        async::threads_start();
+        
         // Создаем acceptor с переданным портом
         acceptor = std::make_unique<tcp::acceptor>(
-        io_context, 
-        tcp::endpoint(tcp::v4(), g_port)
-       );
-       BeginAcceptConnection();
+          io_context, 
+          tcp::endpoint(tcp::v4(), g_port)
+         );
+         BeginAcceptConnection();
 
-        io_context.run();
+         io_context.run(); // блокируется до завершения
+       
+         // После остановки io_context останавливаем потоки
+         async::threads_stop();
               
     }
     catch (std::exception& e)
