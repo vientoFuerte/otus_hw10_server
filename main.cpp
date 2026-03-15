@@ -3,154 +3,10 @@
 #include <ctime>
 #include <iostream>
 #include <string>
-#include <boost/asio.hpp>
 #include <memory>
 #include <atomic>
-#include "async.h"
-
-
-using boost::asio::ip::tcp;
-
-std::string message = "TCP/IP Hello world\n";
-
-std::string message_hash = "\n1234\n";
-std::atomic_uint connection_id = 0;
-// Глобальная переменная для размера блока
-std::size_t g_bulk_size = 0;
-// Глобальная переменная для порта
-unsigned short g_port = 0;
-// IO контекст и acceptor (теперь будет создаваться после получения порта)
-boost::asio::io_context io_context;
-std::unique_ptr<tcp::acceptor> acceptor;  // Используем unique_ptr, так как acceptor будет создан позже
-
-// Класс, представляющий одно подключение
-struct Connection : public std::enable_shared_from_this<Connection>
-{
-   tcp::socket socket;
-  // std::size_t bulk_size_;
-   async::BulkContext* ctx_;
-   boost::asio::streambuf streambuf_;
-   
-   void start_read();
-   
-   static std::shared_ptr<Connection> Create(boost::asio::io_context& io_context)
-   {
-      return std::make_shared<Connection>(io_context);
-   }
-
-
-    Connection(boost::asio::io_context& io_context) : socket(io_context)
-    {
-        ctx_ = async::connect(g_bulk_size);
-    }
-    
-      ~Connection() {
-         async::disconnect(ctx_);  // при разрушении сессии удаляем контекст
-    }
-};
-
-void Connection::start_read() {
-    auto self = shared_from_this();
-    boost::asio::async_read_until(socket, streambuf_, '\n',
-        [this, self](boost::system::error_code ec, std::size_t /*bytes*/) {
-            if (!ec) {
-                std::istream is(&streambuf_);
-                std::string line;
-                while(std::getline(is, line))
-                {
-                    // Передаём команду в библиотеку async
-                    async::receive(ctx_, line.c_str(), line.size());
-                }
-                // Продолжаем чтение
-                start_read();
-            } else {
-                // Обрабатываем остаток данных в буфере (последняя строка без \n)
-                if (streambuf_.size() > 0) {
-                std::cout << "=== BUFFER CONTENTS (" << streambuf_.size() << " bytes) ===" << std::endl;
-                    std::string remaining(boost::asio::buffers_begin(streambuf_.data()),
-                                          boost::asio::buffers_begin(streambuf_.data()) + streambuf_.size());
-                    streambuf_.consume(streambuf_.size());
-                    if (!remaining.empty() && remaining.back() == '\r')
-                        remaining.pop_back();
-                    async::receive(ctx_, remaining.c_str(), remaining.size());
-                }
-                // Соединение закрывается
-            }
-        });
-}
-
-
-void HandleAccept(std::shared_ptr<Connection> connection,const boost::system::error_code& err);
-void HandleWrite(const boost::system::error_code& err, size_t bytes_send);
-void ProcessConnection(std::shared_ptr<Connection>);
-
-void BeginAcceptConnection()
-{
-    
-    std::shared_ptr<Connection> c = Connection::Create(io_context);
-    //std::shared_ptr<tcp::socket> s = new tcp::socket(io_context);
-    //acceptor.async_accept(c->socket, std::bind(HandleAccept,c,boost::asio::placeholders::error));
-    // Асинхронно ждём подключения.
-    // Вместо std::bind используем лямбда-захват shared_ptr c.
-    acceptor->async_accept(c->socket,
-        [c](const boost::system::error_code& err) {
-            HandleAccept(c, err);
-        });
-    
-    
-}
-
-void HandleAccept(std::shared_ptr<Connection> connection, const boost::system::error_code& err)
-{
-    
-    //std::cout << connection_id << std::endl;
-    
-    if (err) {
-        std::cout << err.message() << std::endl;
-        BeginAcceptConnection();
-    }
-    else {
-        connection_id++;
-        //std::cout << "CONNECTION ACCEPTED:" << std::endl;
-        
-        // Обрабатываем подключение (отправляем приветствие)
-        ProcessConnection(connection);
-        
-        // Снова начинаем ждать следующее подключение
-        BeginAcceptConnection();
-    }
-       
-
-    
-}
-
-void ProcessConnection(std::shared_ptr<Connection> c)
-{
-    // Используем shared_ptr, чтобы данные жили до завершения записи
-    auto msg = std::make_shared<std::string>(
-        message + " " + std::to_string(connection_id) + message_hash
-    );
-    
-    boost::asio::async_write(
-        c->socket,
-        boost::asio::buffer(*msg),
-        [c, msg](const boost::system::error_code& err, size_t bytes_send) {
-            //HandleWrite(err, bytes_send);
-            if(!err)
-            {
-                c->start_read();  // начинаем читать команды после отправки
-            }
-        }
-    );
-}
-
-
-
-void HandleWrite(const boost::system::error_code& err,size_t bytes_send)
-{
-    (void)err; // убирает предупреждение о неиспользуемом параметре
-    std::cout << "SEND:" << bytes_send << std::endl;
-}
+#include <thread>
+#include "bulk_server.h"
 
 
 int main(int argc, char* argv[])
@@ -180,6 +36,9 @@ int main(int argc, char* argv[])
 
          io_context.run(); // блокируется до завершения
        
+         // Даем время потокам вывода обработать последние блоки
+         std::this_thread::sleep_for(std::chrono::milliseconds(100));
+         
          // После остановки io_context останавливаем потоки
          async::threads_stop();
               
