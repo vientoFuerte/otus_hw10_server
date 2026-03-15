@@ -23,11 +23,12 @@ struct BulkContext {
       // При разрушении выводим накопленные команды,
       // только если не находимся внутри динамического блока.
       if (depth == 0 && !commands.empty()) {
+          std::cerr << "DEBUG: destructor adding block size=" << commands.size() << std::endl;
           add_block_to_queues(commands);
       }
     }
 
-    void process(const std::string& line);
+    void process(std::string& line);
 };
 
 
