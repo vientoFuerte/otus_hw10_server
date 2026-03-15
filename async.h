@@ -35,4 +35,7 @@ BulkContext * connect(std::size_t bulk);
 void receive(BulkContext * ctx, const char* data, std::size_t size);
 void disconnect(BulkContext * ctx);
 
+void threads_start();
+void threads_stop();
+
 };
