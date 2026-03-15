@@ -31,13 +31,13 @@ bool threads_started = false;   // потоки запущены
 
 //Функция для потока вывода в консоль
 void logThreadFunction() {
-    //std::cerr << "[DEBUG] logThreadFunction started" << std::endl;
+    DLOG(" logThreadFunction started" << std::endl;)
     std::vector<std::string> output_block;  // объявляем здесь
     while(log_queue.pop(output_block)) {
-        //std::cerr << "[DEBUG] logThreadFunction popped block, size=" << output_block.size() << std::endl;
+        DLOG("logThreadFunction popped block, size=" << output_block.size() << std::endl;)
         print_block_to_console(output_block);
     }
-   // std::cerr << "[DEBUG] logThreadFunction exiting" << std::endl;
+    DLOG("logThreadFunction exiting" << std::endl;)
 }
 
 //Функция для потока вывода в файл
@@ -155,18 +155,19 @@ void print_block_to_file(const std::vector<std::string>& cmds) {
 
 BulkContext* connect(std::size_t bulk) {
     auto* ctx = new BulkContext(bulk);
-    //threads_start();
+    DLOG("connect created ctx=" << ctx << std::endl;)
     return ctx;
 }
 
 //добавляем сформированные блоки в очереди
 void add_block_to_queues(std::vector <std::string> block)
 {
-    std::cerr << "DEBUG: add_block_to_queues size=" << block.size() << std::endl;
+    DLOG( "add_block_to_queues size=" << block.size() << std::endl;)
     // в очередь для консоли
     {
         std::lock_guard<std::mutex> lock(console_mutex);
         log_queue.push(block);
+        DLOG("DEBUG: pushed to log_queue" << std::endl;)
     }
     console_cv.notify_one();
     
@@ -176,7 +177,7 @@ void add_block_to_queues(std::vector <std::string> block)
         file_queue.push(block);
     }
     file_cv.notify_one();
-
+    DLOG("DEBUG: add_block_to_queues EXIT" << std::endl;)
 }
 
 void receive(BulkContext* ctx, const char* data, std::size_t size) {
@@ -198,13 +199,13 @@ void receive(BulkContext* ctx, const char* data, std::size_t size) {
 void disconnect(BulkContext* ctx) {
     if (ctx) {
         delete ctx;
+        DLOG("сtx deleted" << std::endl);
     }
-    //threads_stop();
 }
 
 void BulkContext::process(std::string& cmd)
 {
-    std::cerr << "[DEBUG] process: cmd='" << cmd << "', depth=" << depth << ", commands.size=" <<        commands.size() << std::endl;
+    DLOG("process: cmd='" << cmd << "', depth=" << depth << ", commands.size=" <<        commands.size() << std::endl;)
    if (cmd.empty()) return;
    if (cmd.back() == '\r')
    {
