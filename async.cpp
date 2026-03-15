@@ -162,6 +162,7 @@ BulkContext* connect(std::size_t bulk) {
 //добавляем сформированные блоки в очереди
 void add_block_to_queues(std::vector <std::string> block)
 {
+    std::cerr << "DEBUG: add_block_to_queues size=" << block.size() << std::endl;
     // в очередь для консоли
     {
         std::lock_guard<std::mutex> lock(console_mutex);
@@ -201,11 +202,15 @@ void disconnect(BulkContext* ctx) {
     //threads_stop();
 }
 
-void BulkContext::process(const std::string& cmd)
+void BulkContext::process(std::string& cmd)
 {
-    //std::cerr << "[DEBUG] process: cmd='" << cmd << "', depth=" << depth << ", commands.size=" <<        commands.size() << std::endl;
+    std::cerr << "[DEBUG] process: cmd='" << cmd << "', depth=" << depth << ", commands.size=" <<        commands.size() << std::endl;
    if (cmd.empty()) return;
-    
+   if (cmd.back() == '\r')
+   {
+      cmd.pop_back();
+   }
+  
    if (cmd == "{")
     {
         if(depth == 0)
