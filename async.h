@@ -4,7 +4,7 @@
 #include <string>
 #include <iostream>
 #include <fstream>
-
+#include "debug_settings.h"
 
 namespace async {
 //добавляем сформированные блоки в очереди
@@ -20,12 +20,16 @@ struct BulkContext {
     BulkContext(std::size_t size) : bulk_size(size) {}
     
     ~BulkContext() {
+    
+      DLOG("BulkContext destructor START, depth=" << depth 
+              << ", commands.size=" << commands.size() << std::endl;) 
       // При разрушении выводим накопленные команды,
       // только если не находимся внутри динамического блока.
       if (depth == 0 && !commands.empty()) {
-          std::cerr << "DEBUG: destructor adding block size=" << commands.size() << std::endl;
+          DLOG("destructor adding block of size " << commands.size() << std::endl);
           add_block_to_queues(commands);
       }
+      DLOG("BulkContext destructor END" << std::endl;)
     }
 
     void process(std::string& line);
