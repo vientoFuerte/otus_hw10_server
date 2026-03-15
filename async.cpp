@@ -31,13 +31,13 @@ bool threads_started = false;   // потоки запущены
 
 //Функция для потока вывода в консоль
 void logThreadFunction() {
-    std::cerr << "[DEBUG] logThreadFunction started" << std::endl;
+    //std::cerr << "[DEBUG] logThreadFunction started" << std::endl;
     std::vector<std::string> output_block;  // объявляем здесь
     while(log_queue.pop(output_block)) {
-        std::cerr << "[DEBUG] logThreadFunction popped block, size=" << output_block.size() << std::endl;
+        //std::cerr << "[DEBUG] logThreadFunction popped block, size=" << output_block.size() << std::endl;
         print_block_to_console(output_block);
     }
-    std::cerr << "[DEBUG] logThreadFunction exiting" << std::endl;
+   // std::cerr << "[DEBUG] logThreadFunction exiting" << std::endl;
 }
 
 //Функция для потока вывода в файл
@@ -49,9 +49,9 @@ void fileThreadFunction() {
 
 void threads_start()
 {
-  std::cerr << "[DEBUG] threads_start() called, threads_started=" << threads_started << std::endl;
+  //std::cerr << "[DEBUG] threads_start() called, threads_started=" << threads_started << std::endl;
  log_queue.reset();   
-        file_queue.reset(); 
+ file_queue.reset(); 
  if(!threads_started)
   {
     log_thread = std::thread(logThreadFunction);
@@ -63,7 +63,7 @@ void threads_start()
 
 void threads_stop()
 {
-  std::cerr << "[DEBUG] threads_stop() called, threads_started=" << threads_started << std::endl;
+  //std::cerr << "[DEBUG] threads_stop() called, threads_started=" << threads_started << std::endl;
   if(threads_started)
   {
     //std::this_thread::sleep_for(std::chrono::milliseconds(100)); // дать время на обработку
@@ -115,9 +115,7 @@ std::string generateFilename()
 // вывод блока в консоль потоком log
 void print_block_to_console(const std::vector<std::string>& cmds) {
 
-std::cerr << "[DEBUG] print_block_to_console called, cmds size=" << cmds.size() << std::endl;
-
-
+   //std::cerr << "[DEBUG] print_block_to_console called, cmds size=" << cmds.size() << std::endl;
     if(cmds.empty()) {return;}
     std::lock_guard<std::mutex> lock(console_mutex);
     
@@ -130,7 +128,7 @@ std::cerr << "[DEBUG] print_block_to_console called, cmds size=" << cmds.size() 
         std::cout << cmds[i];
     } 
     std::cout.flush();
-    std::cerr << "[DEBUG] print_block_to_console finished" << std::endl;
+    //std::cerr << "[DEBUG] print_block_to_console finished" << std::endl;
   }
 
 // запись блока в файл файловым потоком
@@ -157,7 +155,7 @@ void print_block_to_file(const std::vector<std::string>& cmds) {
 
 BulkContext* connect(std::size_t bulk) {
     auto* ctx = new BulkContext(bulk);
-    threads_start();
+    //threads_start();
     return ctx;
 }
 
@@ -200,12 +198,12 @@ void disconnect(BulkContext* ctx) {
     if (ctx) {
         delete ctx;
     }
-    threads_stop();
+    //threads_stop();
 }
 
 void BulkContext::process(const std::string& cmd)
 {
-    std::cerr << "[DEBUG] process: cmd='" << cmd << "', depth=" << depth << ", commands.size=" <<        commands.size() << std::endl;
+    //std::cerr << "[DEBUG] process: cmd='" << cmd << "', depth=" << depth << ", commands.size=" <<        commands.size() << std::endl;
    if (cmd.empty()) return;
     
    if (cmd == "{")
@@ -239,7 +237,6 @@ void BulkContext::process(const std::string& cmd)
 }
 
 }  // namespace async
-
 
 
 
