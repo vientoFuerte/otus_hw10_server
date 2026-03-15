@@ -30,6 +30,9 @@ struct Connection : public std::enable_shared_from_this<Connection>
    tcp::socket socket;
   // std::size_t bulk_size_;
    async::BulkContext* ctx_;
+   boost::asio::streambuf streambuf_;
+   
+   void start_read();
    
    static std::shared_ptr<Connection> Create(boost::asio::io_context& io_context)
    {
@@ -46,6 +49,25 @@ struct Connection : public std::enable_shared_from_this<Connection>
          async::disconnect(ctx_);  // при разрушении сессии удаляем контекст
     }
 };
+
+void Connection::start_read() {
+    auto self = shared_from_this();
+    boost::asio::async_read_until(socket, streambuf_, '\n',
+        [this, self](boost::system::error_code ec, std::size_t /*bytes*/) {
+            if (!ec) {
+                std::istream is(&streambuf_);
+                std::string line;
+                std::getline(is, line);
+                // Передаём команду в библиотеку async
+                async::receive(ctx_, line.c_str(), line.size());
+                // Продолжаем чтение
+                start_read();
+            } else {
+                // Ошибка или клиент отключился – соединение закроется автоматически
+                // (деструктор Connection вызовет async::disconnect)
+            }
+        });
+}
 
 
 void HandleAccept(std::shared_ptr<Connection> connection,const boost::system::error_code& err);
@@ -102,8 +124,12 @@ void ProcessConnection(std::shared_ptr<Connection> c)
     boost::asio::async_write(
         c->socket,
         boost::asio::buffer(*msg),
-        [msg](const boost::system::error_code& err, size_t bytes_send) {
-            HandleWrite(err, bytes_send);
+        [c, msg](const boost::system::error_code& err, size_t bytes_send) {
+            //HandleWrite(err, bytes_send);
+            if(!err)
+            {
+                c->start_read();  // начинаем читать команды после отправки
+            }
         }
     );
 }
@@ -149,4 +175,3 @@ int main(int argc, char* argv[])
 
     return 0;
 }
-
