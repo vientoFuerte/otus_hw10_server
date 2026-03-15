@@ -25,8 +25,7 @@ std::unique_ptr<tcp::acceptor> acceptor;  // Используем unique_ptr, т
 
 // Класс, представляющий одно подключение
 struct Connection : public std::enable_shared_from_this<Connection>
-{    
-
+{
    tcp::socket socket;
   // std::size_t bulk_size_;
    async::BulkContext* ctx_;
@@ -93,7 +92,7 @@ void BeginAcceptConnection()
 void HandleAccept(std::shared_ptr<Connection> connection, const boost::system::error_code& err)
 {
     
-    std::cout << connection_id << std::endl;
+    //std::cout << connection_id << std::endl;
     
     if (err) {
         std::cout << err.message() << std::endl;
@@ -101,7 +100,7 @@ void HandleAccept(std::shared_ptr<Connection> connection, const boost::system::e
     }
     else {
         connection_id++;
-        std::cout << "CONNECTION ACCEPTED:" << std::endl;
+        //std::cout << "CONNECTION ACCEPTED:" << std::endl;
         
         // Обрабатываем подключение (отправляем приветствие)
         ProcessConnection(connection);
@@ -152,7 +151,7 @@ int main(int argc, char* argv[])
     
     }
     
-    std::cout << "SERVER PROGRAM" << std::endl;
+    //std::cout << "SERVER PROGRAM" << std::endl;
     try
     {
         g_port = static_cast<unsigned short>(std::stoi(argv[1]));     // порт
