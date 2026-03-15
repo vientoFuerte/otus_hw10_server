@@ -31,7 +31,7 @@ if(WITH_BOOST_TEST AND EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/test.cpp)
     # Для тестов нужен unit_test_framework
     find_package(Boost REQUIRED COMPONENTS unit_test_framework filesystem program_options regex)
     
-    add_executable(bulk_server_tests test.cpp bulk_server.cpp)
+    add_executable(bulk_server_tests test.cpp bulk_server.cpp async.cpp)
     
     set_target_properties(bulk_server_tests PROPERTIES
         CXX_STANDARD 17
