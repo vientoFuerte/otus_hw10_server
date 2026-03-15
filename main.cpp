@@ -13,7 +13,7 @@ using boost::asio::ip::tcp;
 
 std::string message = "TCP/IP Hello world\n";
 
-std::string message_hash = "1234";
+std::string message_hash = "\n1234\n";
 std::atomic_uint connection_id = 0;
 // Глобальная переменная для размера блока
 std::size_t g_bulk_size = 0;
@@ -56,14 +56,25 @@ void Connection::start_read() {
             if (!ec) {
                 std::istream is(&streambuf_);
                 std::string line;
-                std::getline(is, line);
-                // Передаём команду в библиотеку async
-                async::receive(ctx_, line.c_str(), line.size());
+                while(std::getline(is, line))
+                {
+                    // Передаём команду в библиотеку async
+                    async::receive(ctx_, line.c_str(), line.size());
+                }
                 // Продолжаем чтение
                 start_read();
             } else {
-                // Ошибка или клиент отключился – соединение закроется автоматически
-                // (деструктор Connection вызовет async::disconnect)
+                // Обрабатываем остаток данных в буфере (последняя строка без \n)
+                if (streambuf_.size() > 0) {
+                std::cout << "=== BUFFER CONTENTS (" << streambuf_.size() << " bytes) ===" << std::endl;
+                    std::string remaining(boost::asio::buffers_begin(streambuf_.data()),
+                                          boost::asio::buffers_begin(streambuf_.data()) + streambuf_.size());
+                    streambuf_.consume(streambuf_.size());
+                    if (!remaining.empty() && remaining.back() == '\r')
+                        remaining.pop_back();
+                    async::receive(ctx_, remaining.c_str(), remaining.size());
+                }
+                // Соединение закрывается
             }
         });
 }
