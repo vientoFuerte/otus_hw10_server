@@ -28,6 +28,9 @@ std::thread file_thread2;
 
 bool threads_started = false;   // потоки запущены
 
+// глобальный контекст для накопления команд между соединениями
+std::shared_ptr<GlobalContext> global_context;
+
 
 //Функция для потока вывода в консоль
 void logThreadFunction() {
@@ -154,7 +157,11 @@ void print_block_to_file(const std::vector<std::string>& cmds) {
 }
 
 BulkContext* connect(std::size_t bulk) {
-    auto* ctx = new BulkContext(bulk);
+    // Создаем глобальный контекст при первом подключении
+    if (!global_context) {
+        global_context = std::make_shared<GlobalContext>(bulk);
+    }
+    auto* ctx = new BulkContext(bulk, global_context);
     DLOG("connect created ctx=" << ctx << std::endl;)
     return ctx;
 }
@@ -191,21 +198,27 @@ void receive(BulkContext* ctx, const char* data, std::size_t size) {
       while (std::getline(stream, line))  {
         ctx->process(line);
       }
-    
     }
-
 }
 
 void disconnect(BulkContext* ctx) {
     if (ctx) {
-        delete ctx;
+        DLOG("disconnect: deleting ctx, commands.size=" << ctx->commands.size() 
+             << ", depth=" << ctx->depth << std::endl);
+             
+        if(!ctx->commands.empty() && ctx->depth == 0 && ctx->global_ctx)
+        {
+           // add_block_to_queues(ctx->commands);
+           // ctx->commands.clear();
+        }
+        //delete ctx;
         DLOG("сtx deleted" << std::endl);
     }
 }
 
 void BulkContext::process(std::string& cmd)
 {
-    DLOG("process: cmd='" << cmd << "', depth=" << depth << ", commands.size=" <<        commands.size() << std::endl;)
+   DLOG("process: cmd='" << cmd << "', depth=" << depth << ", commands.size=" <<        commands.size() << std::endl;)
    if (cmd.empty()) return;
    if (cmd.back() == '\r')
    {
